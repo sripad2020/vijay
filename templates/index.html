@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Visualizer</title>
+    <!-- CDN Imports -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tilt.js/1.2.1/tilt.jquery.min.js"></script>
+    <style>
+        :root {
+            --primary: #4facfe;
+            --secondary: #00f2fe;
+            --accent: #ff6b6b;
+            --dark-bg: #16213e;
+            --darker-bg: #1a1a2e;
+            --light-text: rgba(255, 255, 255, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--darker-bg), var(--dark-bg));
+            color: var(--light-text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0) 70%);
+            z-index: -1;
+            animation: rotateGradient 15s linear infinite;
+        }
+
+        @keyframes rotateGradient {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Typography */
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        h2 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 1rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload {
+            border: 2px dashed var(--primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-upload:hover {
+            background: rgba(79, 172, 254, 0.1);
+            border-color: var(--secondary);
+        }
+
+        .file-upload svg {
+            width: 48px;
+            height: 48px;
+            stroke-width: 1.5;
+            color: var(--primary);
+        }
+
+        .file-name {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--secondary);
+            word-break: break-all;
+        }
+
+        .btn {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, var(--secondary), var(--primary));
+            z-index: -1;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .btn:hover::before {
+            opacity: 1;
+        }
+
+        /* Loading State */
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Results Section */
+        .results {
+            display: none;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        #visualization {
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        #threeCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .document-content-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            padding: 2rem;
+            background: rgba(25, 25, 46, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .document-content {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 1.5rem;
+            border-left: 3px solid var(--primary);
+            line-height: 1.7;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .document-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 1rem 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .document-content h3 {
+            color: var(--primary);
+            margin: 1.5rem 0 1rem;
+        }
+
+        .document-content p {
+            margin-bottom: 1rem;
+        }
+
+        .filename-display {
+            font-size: 1rem;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: rgba(0, 242, 254, 0.1);
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            background: rgba(79, 172, 254, 0.15);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem 1rem;
+            }
+
+            .card {
+                padding: 1.75rem;
+            }
+
+            h1 {
+                margin-bottom: 1.5rem;
+            }
+
+            #visualization {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 1.5rem;
+            }
+
+            .file-upload {
+                padding: 1.25rem;
+            }
+
+            .btn {
+                padding: 0.9rem;
+            }
+
+            .stats-container {
+                flex-direction: column;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
+
+        /* Floating particles */
+        .floating-particle {
+            position: absolute;
+            background: rgba(79, 172, 254, 0.4);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Particle.js Background -->
+    <div id="particles-js"></div>
+
+    <!-- Floating particles for decoration -->
+    <div id="floating-particles"></div>
+
+    <div class="container">
+        <!-- Upload Card -->
+        <div class="card" id="uploadCard">
+            <h1>Advanced Document Visualizer</h1>
+
+            <form id="uploadForm" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="documentInput">Upload Document</label>
+                    <label for="documentInput" class="file-upload">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Drag & drop or click to browse</span>
+                        <small>Supports: PDF, DOC, DOCX, TXT</small>
+                    </label>
+                    <input id="documentInput" name="document" type="file" accept=".pdf,.doc,.docx,.txt">
+                    <div class="file-name" id="fileName">No file selected</div>
+                </div>
+
+                <button type="submit" class="btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Analyze Document
+                </button>
+            </form>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>Analyzing your document...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div class="card results" id="resultsSection">
+            <h2>Document Analysis</h2>
+            <div class="filename-display" id="processedFilename"></div>
+
+            <div id="visualization">
+                <canvas id="threeCanvas"></canvas>
+                <div class="document-content-container">
+                    <div class="stats-container">
+                        <div class="stat-box">
+                            <div class="stat-value" id="wordCount">0</div>
+                            <div class="stat-label">Words</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="pageCount">0</div>
+                            <div class="stat-label">Pages</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="imageCount">0</div>
+                            <div class="stat-label">Images</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="headingCount">0</div>
+                            <div class="stat-label">Headings</div>
+                        </div>
+                    </div>
+
+                    <div id="documentContent">
+                        <div class="document-content">
+                            <p class="content-placeholder">Your document content will appear here with beautiful visualization effects.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="resetForm()" class="btn" style="margin-top: 1.5rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"></polyline>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+                Analyze Another Document
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Main Application Controller
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize components
+            initParticles();
+            initTiltEffect();
+            setupFileUpload();
+            setupFormSubmission();
+            createFloatingParticles();
+            initThreeJSBackground();
+        });
+
+        // Initialize particle.js background
+        function initParticles() {
+            particlesJS('particles-js', {
+                particles: {
+                    number: {
+                        value: 80,
+                        density: {
+                            enable: true,
+                            value_area: 800
+                        }
+                    },
+                    color: { value: "#4facfe" },
+                    shape: { type: "circle" },
+                    opacity: {
+                        value: 0.5,
+                        random: true,
+                        anim: {
+                            enable: true,
+                            speed: 1,
+                            opacity_min: 0.1,
+                            sync: false
+                        }
+                    },
+                    size: {
+                        value: 3,
+                        random: true,
+                        anim: {
+                            enable: true,
+                            speed: 2,
+                            size_min: 0.1,
+                            sync: false
+                        }
+                    },
+                    line_linked: {
+                        enable: true,
+                        distance: 150,
+                        color: "#4facfe",
+                        opacity: 0.4,
+                        width: 1
+                    },
+                    move: {
+                        enable: true,
+                        speed: 1.5,
+                        direction: "none",
+                        random: true,
+                        straight: false,
+                        out_mode: "out",
+                        bounce: false
+                    }
+                },
+                interactivity: {
+                    detect_on: "window",
+                    events: {
+                        onhover: {
+                            enable: true,
+                            mode: "grab",
+                            parallax: {
+                                enable: true,
+                                force: 30,
+                                smooth: 10
+                            }
+                        },
+                        onclick: {
+                            enable: true,
+                            mode: "push"
+                        },
+                        resize: true
+                    },
+                    modes: {
+                        grab: {
+                            distance: 140,
+                            line_linked: {
+                                opacity: 1
+                            }
+                        },
+                        bubble: {
+                            distance: 200,
+                            size: 20,
+                            duration: 0.4
+                        },
+                        push: {
+                            particles_nb: 4
+                        }
+                    }
+                },
+                retina_detect: true
+            });
+        }
+
+        // Create floating particles for decoration
+        function createFloatingParticles() {
+            const container = document.getElementById('floating-particles');
+            const particleCount = 20;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('floating-particle');
+
+                // Random size between 2px and 8px
+                const size = Math.random() * 6 + 2;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+
+                // Random position
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+
+                // Random opacity
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+
+                // Animation
+                const duration = Math.random() * 20 + 10;
+                particle.style.animation = `float ${duration}s infinite ease-in-out`;
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+
+                container.appendChild(particle);
+            }
+
+            // Add CSS for animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes float {
+                    0% { transform: translateY(0) translateX(0); }
+                    50% { transform: translateY(-100px) translateX(50px); }
+                    100% { transform: translateY(0) translateX(0); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Initialize Three.js background for visualization area
+        function initThreeJSBackground() {
+            const container = document.getElementById('visualization');
+            if (!container) return;
+
+            // 1. Create scene
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x16213e);
+
+            // 2. Setup camera
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            // 3. Create renderer
+            const renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('threeCanvas'),
+                antialias: true,
+                alpha: false
+            });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // 4. Create floating elements
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particleCount = 500;
+
+            const posArray = new Float32Array(particleCount * 3);
+            const colorArray = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 10;
+                colorArray[i] = Math.random();
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.02,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+
+            // 5. Add lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x4facfe, 1, 10);
+            pointLight.position.set(2, 3, 4);
+            scene.add(pointLight);
+
+            const pointLight2 = new THREE.PointLight(0x00f2fe, 0.5, 10);
+            pointLight2.position.set(-2, -1, 3);
+            scene.add(pointLight2);
+
+            // 6. Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                particlesMesh.rotation.x += 0.0005;
+                particlesMesh.rotation.y += 0.0005;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // Initialize tilt.js effect on upload card
+        function initTiltEffect() {
+            $('#uploadCard').tilt({
+                maxTilt: 5,
+                perspective: 1500,
+                scale: 1.02,
+                glare: true,
+                maxGlare: 0.15,
+                reset: true,
+                transition: true
+            });
+        }
+
+        // Setup file upload interaction
+        function setupFileUpload() {
+            const fileInput = $('#documentInput');
+            const fileNameDisplay = $('#fileName');
+
+            fileInput.on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    fileNameDisplay.text(file.name);
+
+                    // Add visual feedback
+                    fileNameDisplay.css({
+                        'color': '#00f2fe',
+                        'font-weight': '500'
+                    });
+                } else {
+                    fileNameDisplay.text('No file selected');
+                    fileNameDisplay.css({
+                        'color': '',
+                        'font-weight': ''
+                    });
+                }
+            });
+
+            // Drag and drop functionality
+            const fileUpload = $('.file-upload');
+
+            fileUpload.on('dragover', function(e) {
+                e.preventDefault();
+                $(this).css({
+                    'background': 'rgba(79, 172, 254, 0.2)',
+                    'border-color': '#00f2fe'
+                });
+            });
+
+            fileUpload.on('dragleave', function() {
+                $(this).css({
+                    'background': '',
+                    'border-color': '#4facfe'
+                });
+            });
+
+            fileUpload.on('drop', function(e) {
+                e.preventDefault();
+                $(this).css({
+                    'background': '',
+                    'border-color': '#4facfe'
+                });
+
+                if (e.originalEvent.dataTransfer.files.length) {
+                    fileInput[0].files = e.originalEvent.dataTransfer.files;
+                    fileInput.trigger('change');
+                }
+            });
+        }
+
+        // Setup form submission to send to Flask backend
+        function setupFormSubmission() {
+            $('#uploadForm').on('submit', function(e) {
+                e.preventDefault();
+
+                const fileInput = document.getElementById('documentInput');
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    showAlert('Please select a file first');
+                    return;
+                }
+
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('document', file);
+
+                // Show loading state
+                $('#uploadCard').fadeOut(300);
+                $('#loadingIndicator').fadeIn(300);
+
+                // Send to Flask backend
+                fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Display results from Flask
+                    displayResults(data, file.name);
+
+                    // Show results section
+                    $('#loadingIndicator').fadeOut(300, function() {
+                        $('#resultsSection').fadeIn(300);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Error processing document');
+                    resetForm();
+                });
+            });
+        }
+
+        // Display results from Flask backend
+        function displayResults(data, filename) {
+            // Display filename
+            $('#processedFilename').text(`File: ${filename}`);
+
+            // Update statistics
+            if (data.word_count !== undefined) $('#wordCount').text(data.word_count);
+            if (data.page_count !== undefined) $('#pageCount').text(data.page_count);
+            if (data.image_count !== undefined) $('#imageCount').text(data.image_count);
+            if (data.heading_count !== undefined) $('#headingCount').text(data.heading_count);
+
+            // Display content
+            const contentContainer = $('#documentContent .document-content');
+            contentContainer.empty();
+
+            if (data.content) {
+                // Simple formatting for the content
+                const paragraphs = data.content.split('\n\n');
+
+                paragraphs.forEach(para => {
+                    if (para.trim() === '') return;
+
+                    // Check if this looks like a heading
+                    if (para.match(/^[A-Z][A-Z0-9 ]+$/)) {
+                        contentContainer.append(`<h3>${para}</h3>`);
+                    } else {
+                        contentContainer.append(`<p>${para}</p>`);
+                    }
+                });
+            }
+
+            // Add visualizations if provided by backend
+            if (data.visualizations) {
+                const vizContainer = $('<div style="display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0;"></div>');
+
+                data.visualizations.forEach(viz => {
+                    vizContainer.append(`<img src="${viz.url}" alt="${viz.label}" style="max-width: 100%; border-radius: 8px;">`);
+                });
+
+                contentContainer.append(vizContainer);
+            }
+        }
+
+        // Reset the form
+        function resetForm() {
+            $('#resultsSection').fadeOut(300, function() {
+                // Reset form elements
+                $('#documentInput').val('');
+                $('#fileName').text('No file selected');
+
+                // Reset content display
+                $('#documentContent .document-content').html(
+                    '<p class="content-placeholder">Your document content will appear here with beautiful visualization effects.</p>'
+                );
+
+                $('#uploadCard').fadeIn(300);
+            });
+        }
+
+        // Show alert message
+        function showAlert(message) {
+            const alert = $(`
+                <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+                    background: rgba(255, 107, 107, 0.9); color: white; padding: 12px 24px;
+                    border-radius: 50px; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+                    z-index: 1000; animation: fadeIn 0.3s ease-out;">
+                    ${message}
+                </div>
+            `);
+
+            $('body').append(alert);
+
+            setTimeout(() => {
+                alert.fadeOut(300, () => alert.remove());
+            }, 3000);
+
+            // Add CSS for animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    </script>
+</body>
+</html>
