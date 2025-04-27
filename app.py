@@ -4,6 +4,8 @@ import google.generativeai as genai
 import pdfplumber
 from fuzzywuzzy import fuzz
 from flask import Flask, render_template, request, redirect, url_for
+from supabase import create_client
+from io import BytesIO
 
 # --- Gemini setup ---
 genai.configure(api_key='AIzaSyBvph-JgoPgpF51Fb-0Q-9ikeVwaaCTE2A')  # <-- Change your API key here
@@ -99,19 +101,37 @@ def find_matched_skill(row, domain, category, sub_category, suggestions=[]):
 def home():
     return render_template('index.html')
 
+
+# Replace these with your actual Supabase credentials
+SUPABASE_URL = "https://dxzauyeosqtqdhjhhnnz.supabase.co"  # Your Supabase URL
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4emF1eWVvc3F0cWRoamhobm56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3ODQzNzYsImV4cCI6MjA2MTM2MDM3Nn0.97aWxCLWnGzzYJD0kWRqsguqeCqaleHs9rjaEsg8dK0"  # Your API key
+BUCKET_NAME = "excel-files"  # e.g., "excel-files"
+FILE_NAME = "employee_skill_dataset.xlsx"  # e.g., "employee_data.xlsx"
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+def download_excel_file():
+    try:
+        print("⌛ Downloading file from Supabase storage...")
+        file_data = supabase.storage.from_(BUCKET_NAME).download(FILE_NAME)
+        df = pd.read_excel(BytesIO(file_data))
+        print(df.columns)
+        return df
+    except Exception as e:
+        print(f"\n❌ Error: {str(e)}")
+        print("\nTroubleshooting tips:")
+        print("1. Check if your Supabase URL and API key are correct")
+        print("2. Verify the bucket name and file exist in Supabase Storage")
+
+
 @app.route("/predict", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         pdf_file = request.files['pdf_file']
-        excel_file = request.files['excel_file']
-        if pdf_file and excel_file:
+        if pdf_file:
             pdf_path = os.path.join(UPLOAD_FOLDER, pdf_file.filename)
-            excel_path = os.path.join(UPLOAD_FOLDER, excel_file.filename)
             pdf_file.save(pdf_path)
-            excel_file.save(excel_path)
             job_description_text = read_pdf_text(pdf_path)
             domain, category, sub_category = extract_domain_category_subcategory(job_description_text)
-            df = pd.read_excel(excel_path)
+            df = download_excel_file()
             matched_employees = fuzzy_match_employees(df, domain, category, sub_category)
             suggestions = []
             if len(matched_employees) < 10:

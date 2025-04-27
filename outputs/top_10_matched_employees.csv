@@ -1,11 +1,11 @@
 Name,Matched Skill,Skill Rate
-Manuel Hansen,SQL,4
-Manuel Hansen,Python,4
-Dr. Isaiah Ewing,SQL,4
-Dr. Isaiah Ewing,Python,4
-Lauren Pearson,SQL,4
-Lauren Pearson,Python,4
-Emily Davis,SQL,4
-Emily Davis,Python,4
-Glenda Beck,SQL,4
-Glenda Beck,Python,4
+Manuel Hansen,Terraform,3
+Lauren Pearson,GCP,3
+John Hayes,Azure,3
+John Hayes,GCP,3
+John Hayes,Terraform,3
+Glenda Beck,Azure,3
+Glenda Beck,GCP,3
+Glenda Beck,Terraform,3
+Emily Davis,Azure,3
+Emily Davis,GCP,3
